@@ -14,6 +14,9 @@
 #include "test_ekos.h"
 #include "test_ekos_simulator.h"
 #include "ekos/capture/capture.h"
+#include "ekos/capture/camera.h"
+#include "ekos/capture/camerastate.h"
+#include "ekos/capture/placeholderpath.h"
 
 TestEkosCapture::TestEkosCapture(QObject *parent) : QObject(parent)
 {
@@ -134,7 +137,8 @@ void TestEkosCapture::testAddCaptureJob()
         QTRY_VERIFY_WITH_TIMEOUT(queueTable->currentRow() == index, timeout);
 
         // It actually takes time before all signals syncing UI are processed, so wait for situation to settle
-        QTRY_VERIFY_WITH_TIMEOUT(std::fabs(captureExposureN->value() - static_cast<double>(index) / 10.0) < 0.1, timeout);
+        const double expectedExposure = frameTypes[index % frameTypeCount] == "Bias" ? 0.01 : index / 10.0;
+        QTRY_VERIFY_WITH_TIMEOUT(std::fabs(captureExposureN->value() - expectedExposure) < 0.1, timeout);
         QTRY_COMPARE_WITH_TIMEOUT(captureCountN->value(), index, timeout);
         QTRY_COMPARE_WITH_TIMEOUT(captureDelayN->value(), index, timeout);
         QTRY_COMPARE_WITH_TIMEOUT(captureTypeS->currentText(), frameTypes[index % frameTypeCount], timeout);
@@ -149,6 +153,29 @@ void TestEkosCapture::testAddCaptureJob()
         KTRY_CAPTURE_CLICK(removeFromQueueB);
         QVERIFY(i - 1 == queueTable->rowCount());
     }
+}
+
+void TestEkosCapture::testBiasExposureFilename()
+{
+    KTRY_CAPTURE_GADGET(QDoubleSpinBox, captureExposureN);
+    KTRY_CAPTURE_GADGET(QComboBox, captureTypeS);
+    KTRY_CAPTURE_GADGET(QPushButton, addToQueueB);
+    KTRY_CAPTURE_GADGET(QTableWidget, queueTable);
+    KTRY_CAPTURE_GADGET(QLineEdit, placeholderFormatT);
+
+    captureExposureN->setValue(10.0);
+    KTRY_CAPTURE_COMBO_SET(captureTypeS, "Bias");
+    placeholderFormatT->setText("%T_%E");
+    KTRY_CAPTURE_CLICK(addToQueueB);
+    QTRY_COMPARE_WITH_TIMEOUT(queueTable->rowCount(), 1, 2000);
+
+    const auto camera = Ekos::Manager::Instance()->captureModule()->mainCamera();
+    const auto job = camera->state()->allJobs().constFirst();
+    QCOMPARE(job->getCoreProperty(Ekos::SequenceJob::SJ_Exposure).toDouble(), 0.01);
+
+    Ekos::PlaceholderPath placeholderPath;
+    const QString filename = placeholderPath.generateSequenceFilename(*job, true, true, 1, ".fits", "");
+    QVERIFY2(filename.endsWith("Bias_0.010_001.fits"), qPrintable(filename));
 }
 
 void TestEkosCapture::testCaptureToTemporary()

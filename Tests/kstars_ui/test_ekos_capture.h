@@ -48,6 +48,9 @@ class TestEkosCapture : public QObject
         /** @brief Test addition, UI sync and removal of capture jobs. */
         void testAddCaptureJob();
 
+        /** @brief Test that bias jobs use the camera's minimum exposure in filenames. */
+        void testBiasExposureFilename();
+
         /** @brief Test that storing to a system temporary folder makes the capture a preview. */
         void testCaptureToTemporary();
 
