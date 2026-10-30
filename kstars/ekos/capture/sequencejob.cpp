@@ -72,6 +72,7 @@ void Ekos::SequenceJob::init(SequenceJobType jobType, XMLEle *root,
     state.reset(new SequenceJobState(sharedState));
 
     loadFrom(root, targetName, jobType);
+    normalizeBiasExposure();
 
     // signal forwarding between this and the state machine
     connect(state.data(), &SequenceJobState::prepareState, this, &SequenceJob::prepareState);
@@ -678,6 +679,16 @@ void SequenceJob::setCoreProperty(PropertyID id, const QVariant &value)
     }
     // store value
     m_CoreProperties[id] = value;
+}
+
+void SequenceJob::normalizeBiasExposure()
+{
+    if (getFrameType() != FRAME_BIAS || !devices || !devices->getActiveCamera())
+        return;
+
+    double min, max, step;
+    if (devices->getActiveCamera()->getMinMaxStep("CCD_EXPOSURE", "CCD_EXPOSURE_VALUE", &min, &max, &step))
+        setCoreProperty(SJ_Exposure, min);
 }
 
 QVariant SequenceJob::getCoreProperty(PropertyID id) const

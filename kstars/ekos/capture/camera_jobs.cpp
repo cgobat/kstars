@@ -598,6 +598,7 @@ void Camera::updateJobFromUI(const QSharedPointer<SequenceJob> &job, FilenamePre
         job->setTargetFilter(FilterPosCombo->currentIndex() + 1, FilterPosCombo->currentText());
 
     job->setCoreProperty(SequenceJob::SJ_Exposure, captureExposureN->value());
+    job->normalizeBiasExposure();
 
     if (captureTypeS->currentText() == CAPTURE_TYPE_VIDEO)
     {

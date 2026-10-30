@@ -142,6 +142,7 @@ class SequenceJob : public QObject
         /// Core Properties
         ////////////////////////////////////////////////////////////////////////
         void setCoreProperty(PropertyID id, const QVariant &value);
+        void normalizeBiasExposure();
         QVariant getCoreProperty(PropertyID id) const;
 
         ////////////////////////////////////////////////////////////////////////
